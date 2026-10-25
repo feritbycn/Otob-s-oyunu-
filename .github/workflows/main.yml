@@ -18,13 +18,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Zip dosyasini ac
+        run: |
+          if [ -f nova-transit.zip ]; then unzip -q -o nova-transit.zip; fi
+          if [ -d nova-transit ]; then echo "PROJ=nova-transit" >> "$GITHUB_ENV"; else echo "PROJ=." >> "$GITHUB_ENV"; fi
+          ls
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Testler
         run: |
+          cd "$PROJ"
           npm ci
           npm test
 
@@ -35,6 +41,7 @@ jobs:
 
       - name: Web dosyalarini hazirla (www)
         run: |
+          cd "$PROJ"
           rm -rf www && mkdir -p www/shared
           cp -r public/. www/
           cp shared/engine.js www/shared/
@@ -42,10 +49,11 @@ jobs:
           if [ -n "$SERVER_URL" ]; then
             echo "window.NT_SERVER = '$SERVER_URL';" > www/js/config.js
           fi
-          echo "--- config.js ---"; cat www/js/config.js
+          cat www/js/config.js
 
       - name: Capacitor + Android projesi
         run: |
+          cd "$PROJ"
           npm i --no-save @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           cat > capacitor.config.json <<'JSON'
           {
@@ -66,23 +74,23 @@ jobs:
           gradle-version: 8.9
 
       - name: APK derle
-        working-directory: android
         run: |
+          cd "$PROJ/android"
           set +e
-          gradle assembleDebug --no-daemon --console=plain > ../build.log 2>&1
+          gradle assembleDebug --no-daemon --console=plain > "$GITHUB_WORKSPACE/build.log" 2>&1
           status=$?
           echo "=========== HATA OZETI ==========="
-          grep -nE "^e: |What went wrong" -A3 ../build.log | head -70
+          grep -nE "^e: |What went wrong" -A3 "$GITHUB_WORKSPACE/build.log" | head -70
           echo "=========== BITTI (cikis kodu: $status) ==========="
           exit $status
 
       - uses: actions/upload-artifact@v4
         with:
           name: NovaTransit-APK
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: ${{ env.PROJ }}/android/app/build/outputs/apk/debug/*.apk
 
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: build-log
-          path: build.log
+          path: build.log.
