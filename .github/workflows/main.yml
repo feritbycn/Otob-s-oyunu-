@@ -58,7 +58,7 @@ jobs:
           cat > capacitor.config.json <<'JSON'
           {
             "appId": "com.novatransit.game",
-            "appName": "Nova Transit",
+            "appName": "Metro Mastery",
             "webDir": "www",
             "android": { "allowMixedContent": false }
           }
@@ -86,11 +86,11 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: NovaTransit-APK
+          name: MetroMastery-APK
           path: ${{ env.PROJ }}/android/app/build/outputs/apk/debug/*.apk
 
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: build-log
-          path: build.log.
+          path: build.log
